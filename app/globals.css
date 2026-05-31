@@ -30,7 +30,7 @@
     padding: 0;
   }
   body {
-    @apply bg-slate-50 text-slate-800 antialiased;
+    @apply bg-[#080f1a] text-slate-800 antialiased;
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {

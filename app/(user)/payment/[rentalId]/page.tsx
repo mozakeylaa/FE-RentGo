@@ -16,42 +16,42 @@ import type { Rental, Payment, PaymentMethod, PaymentInfo } from '@/types'
 
 const METHOD_OPTIONS: { value: PaymentMethod; label: string; icon: React.ReactNode; desc: string }[] = [
   { value: 'TRANSFER', label: 'Transfer Bank', icon: <Banknote size={20} />, desc: 'BCA, Mandiri, BNI, BRI' },
-  { value: 'QRIS',     label: 'QRIS',          icon: <QrCode size={20} />,  desc: 'Scan QR dari app apapun' },
+  { value: 'QRIS', label: 'QRIS', icon: <QrCode size={20} />, desc: 'Scan QR dari app apapun' },
 ]
 
 const statusStyle: Record<string, string> = {
   PENDING: 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/25',
-  PAID:    'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/25',
-  FAILED:  'bg-red-400/10 text-red-400 border border-red-400/25',
+  PAID: 'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/25',
+  FAILED: 'bg-red-400/10 text-red-400 border border-red-400/25',
 }
 const statusLabel: Record<string, string> = {
   PENDING: 'Menunggu Pembayaran',
-  PAID:    'Lunas',
-  FAILED:  'Gagal',
+  PAID: 'Lunas',
+  FAILED: 'Gagal',
 }
 const proofStatusLabel: Record<string, string> = {
   PENDING_REVIEW: 'Bukti sedang direview admin',
-  REJECTED:       'Bukti ditolak, upload ulang',
+  REJECTED: 'Bukti ditolak, upload ulang',
 }
 const proofStatusStyle: Record<string, string> = {
   PENDING_REVIEW: 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/25',
-  REJECTED:       'bg-red-400/10 text-red-400 border border-red-400/25',
+  REJECTED: 'bg-red-400/10 text-red-400 border border-red-400/25',
 }
 
 export default function PaymentPage() {
   const { rentalId } = useParams<{ rentalId: string }>()
 
-  const [rental, setRental]               = useState<Rental | null>(null)
-  const [payment, setPayment]             = useState<Payment | null>(null)
-  const [paymentInfo, setPaymentInfo]     = useState<PaymentInfo | null>(null)
-  const [method, setMethod]               = useState<PaymentMethod>('TRANSFER')
+  const [rental, setRental] = useState<Rental | null>(null)
+  const [payment, setPayment] = useState<Payment | null>(null)
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
+  const [method, setMethod] = useState<PaymentMethod>('TRANSFER')
   const [loadingRental, setLoadingRental] = useState(true)
   const [loadingPayment, setLoadingPayment] = useState(true)
-  const [loadingInfo, setLoadingInfo]     = useState(false)
-  const [creating, setCreating]           = useState(false)
-  const [uploading, setUploading]         = useState(false)
-  const [proofPreview, setProofPreview]   = useState<string | null>(null)
-  const fileRef                           = useRef<HTMLInputElement>(null)
+  const [loadingInfo, setLoadingInfo] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [proofPreview, setProofPreview] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (!rentalId) return
@@ -69,7 +69,7 @@ export default function PaymentPage() {
         // Fetch payment info sesuai method yang sudah dibuat
         fetchPaymentInfo(p.method)
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingPayment(false))
   }, [rentalId])
 
@@ -263,13 +263,15 @@ export default function PaymentPage() {
                     {/* TRANSFER — tampil rekening */}
                     {paymentInfo.method === 'TRANSFER' && paymentInfo.accounts && (
                       <div className="space-y-2">
-                        {paymentInfo.accounts.map((acc, i) => (
-                          <div key={i} className="bg-white/[0.04] border border-white/10 rounded-xl p-4">
-                            <p className="text-xs text-white/40 mb-1">{acc.bank}</p>
-                            <p className="font-mono text-lg font-bold text-white">{acc.accountNumber}</p>
-                            <p className="text-xs text-white/50 mt-0.5">a.n. {acc.accountName}</p>
-                          </div>
-                        ))}
+                        {paymentInfo.accounts.map((acc, i) => {
+                          return (
+                            <div key={i} className="bg-white/[0.04] border border-white/10 rounded-xl p-4">
+                              <p className="text-xs text-white/40 mb-1">{acc.bank}</p>
+                              <p className="font-mono text-lg font-bold text-white">{acc.accountNumber}</p>
+                              <p className="text-xs text-white/50 mt-0.5">a.n. {acc.accountName}</p>
+                            </div>
+                          )
+                        })}
                       </div>
                     )}
 
@@ -312,9 +314,8 @@ export default function PaymentPage() {
                 )}
 
                 {payment.proofStatus !== 'PENDING_REVIEW' ? (
-                  <label className={`flex flex-col items-center justify-center gap-2 w-full border-2 border-dashed rounded-2xl py-6 cursor-pointer transition-all ${
-                    uploading ? 'border-white/10 opacity-50 pointer-events-none' : 'border-white/15 hover:border-[#4ade80]/50 hover:bg-[#4ade80]/5'
-                  }`}>
+                  <label className={`flex flex-col items-center justify-center gap-2 w-full border-2 border-dashed rounded-2xl py-6 cursor-pointer transition-all ${uploading ? 'border-white/10 opacity-50 pointer-events-none' : 'border-white/15 hover:border-[#4ade80]/50 hover:bg-[#4ade80]/5'
+                    }`}>
                     {uploading ? (
                       <><Loader2 size={22} className="animate-spin text-[#4ade80]" /><span className="text-sm text-white/40">Mengupload...</span></>
                     ) : (
@@ -362,24 +363,21 @@ export default function PaymentPage() {
                 <button
                   key={opt.value}
                   onClick={() => setMethod(opt.value)}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
-                    method === opt.value
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${method === opt.value
                       ? 'border-[#4ade80]/40 bg-[#4ade80]/5'
                       : 'border-white/10 bg-white/[0.02] hover:border-white/20'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    method === opt.value ? 'bg-[#4ade80]/15 text-[#4ade80]' : 'bg-white/5 text-white/40'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${method === opt.value ? 'bg-[#4ade80]/15 text-[#4ade80]' : 'bg-white/5 text-white/40'
+                    }`}>
                     {opt.icon}
                   </div>
                   <div className="flex-1">
                     <p className={`font-semibold text-sm ${method === opt.value ? 'text-white' : 'text-white/60'}`}>{opt.label}</p>
                     <p className="text-xs text-white/30">{opt.desc}</p>
                   </div>
-                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                    method === opt.value ? 'border-[#4ade80] bg-[#4ade80]' : 'border-white/20'
-                  }`} />
+                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${method === opt.value ? 'border-[#4ade80] bg-[#4ade80]' : 'border-white/20'
+                    }`} />
                 </button>
               ))}
             </div>

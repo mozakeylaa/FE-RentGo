@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Car, Shield, Clock, Headphones, MapPin, Phone, Mail, Star, Award, ChevronRight } from 'lucide-react'
+import { Car, Shield, Clock, Headphones, MapPin, Phone, Mail, Star, Award, ChevronRight} from 'lucide-react'
 
 export default function AboutPage() {
   return (
@@ -28,7 +28,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ===== MISI & VISI ===== */}
+      {/* ===== VISI & MISI ===== */}
       <section className="max-w-5xl mx-auto px-4 py-16 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-8 hover:border-[#4ade80]/25 transition-all">
           <div className="w-12 h-12 bg-[#4ade80]/10 border border-[#4ade80]/20 rounded-2xl flex items-center justify-center mb-5">
@@ -97,28 +97,24 @@ export default function AboutPage() {
       <section className="bg-white/[0.02] border-y border-white/[0.06] py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-white">Developer RentGo</h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-white">Tim Developer</h2>
             <p className="text-white/40 text-sm mt-2">Orang-orang di balik RentGo</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
-  {[
-    { name: 'Moza Keyla',           role: 'Frontend Developer', img: '/images/moza.jpeg' },
-    { name: 'Fadhil Akbar Saputra', role: 'Backend Developer',  img: '/images/fadhil.jpeg' },
-  ].map((t) => (
-    <div key={t.name} className="bg-white/[0.04] border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center hover:border-white/20 transition-all">
-      <div className="relative w-32 h-32 rounded-full mx-auto mb-5 overflow-hidden border-2 border-white/10">
-        <Image
-          src={t.img}
-          alt={t.name}
-          fill
-          className="object-cover object-top"
-        />
-      </div>
-      <p className="font-semibold text-white text-lg">{t.name}</p>
-      <p className="text-sm text-white/40 mt-1">{t.role}</p>
-    </div>
-  ))}
-</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            {[
+              { name: 'Moza Keyla',           role: 'Frontend Developer', img: '/images/moza.jpeg',   stack: 'Next.js · TypeScript · Tailwind' },
+              { name: 'Fadhil Akbar Saputra', role: 'Backend Developer',  img: '/images/fadhil.jpeg', stack: 'NestJS · Prisma · PostgreSQL' },
+            ].map((t) => (
+              <div key={t.name} className="bg-white/[0.04] border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center hover:border-[#4ade80]/25 transition-all group">
+                <div className="relative w-28 h-28 rounded-full mx-auto mb-5 overflow-hidden border-2 border-[#4ade80]/30 group-hover:border-[#4ade80]/60 transition-all">
+                  <Image src={t.img} alt={t.name} fill className="object-cover object-top" />
+                </div>
+                <p className="font-bold text-white text-lg">{t.name}</p>
+                <p className="text-sm text-[#4ade80] mt-1 font-medium">{t.role}</p>
+                <p className="text-xs text-white/30 mt-2">{t.stack}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

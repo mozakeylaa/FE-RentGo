@@ -40,6 +40,7 @@ export interface Rental {
   status: RentalStatus;
   vehicle?: Vehicle;
   user?: User;
+  payment?: Payment | null;  // ← tambah ini
 }
 
 export interface PaymentAccount {

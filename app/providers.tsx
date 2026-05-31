@@ -3,6 +3,7 @@
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/context/AuthContext'
 import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <main className="min-h-screen">
         {children}
       </main>
+      <Footer />
       <Toaster
         position="top-right"
         toastOptions={{
