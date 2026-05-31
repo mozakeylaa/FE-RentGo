@@ -102,7 +102,7 @@ export default function AboutPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {[
-              { name: 'Moza Keyla',           role: 'Frontend Developer', img: '/images/moza.jpeg',   stack: 'Next.js · TypeScript · Tailwind' },
+              { name: '',           role: 'Frontend Developer', img: '',   stack: 'Next.js · TypeScript · Tailwind' },
               { name: 'Fadhil Akbar Saputra', role: 'Backend Developer',  img: '/images/fadhil.jpeg', stack: 'NestJS · TypeScript · Prisma · MySQL · Swagger · RailWay' },
             ].map((t) => (
               <div key={t.name} className="bg-white/[0.04] border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center hover:border-[#4ade80]/25 transition-all group">
