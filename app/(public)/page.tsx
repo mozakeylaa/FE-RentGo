@@ -76,6 +76,7 @@ export default function HomePage() {
   const [vehicles, setVehicles]               = useState<Vehicle[]>([])
   const [loading, setLoading]                 = useState(true)
   const [search, setSearch]                   = useState('')
+  const [category, setCategory]               = useState('')
   const [lokasi, setLokasi]                   = useState('')
   const [type, setType]                       = useState<VehicleType | ''>('')
   const [page, setPage]                       = useState(1)
@@ -101,7 +102,9 @@ export default function HomePage() {
     setLoading(true)
     try {
       const params = {
-        ...(debounced ? { search: debounced } : { status: 'AVAILABLE' as const }),
+        ...(debounced  ? { search: debounced }     : {}),
+        ...(category   ? { category }              : {}),
+        ...(!debounced && !category ? { status: 'AVAILABLE' as const } : {}),
         ...(type            ? { type }                       : {}),
         ...(debouncedLokasi ? { location: debouncedLokasi } : {}),
         page,
@@ -115,36 +118,42 @@ export default function HomePage() {
     } finally {
       setLoading(false)
     }
-  }, [debounced, type, debouncedLokasi, page])
+  }, [debounced, category, type, debouncedLokasi, page])
 
   useEffect(() => { fetchVehicles() }, [fetchVehicles])
 
   const handleTypeChange = (val: VehicleType | '') => { setType(val); setPage(1) }
+
+  const handleCategoryClick = (tag: string, vehicleType: VehicleType) => {
+    setCategory(tag)
+    setType(vehicleType)
+    setDebounced('')
+    setSearch('')
+    setPage(1)
+    setTimeout(() => {
+      document.getElementById('kendaraan')?.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
+  }
 
   return (
     <div className="bg-[#080f1a]">
 
       {/* ===== HERO ===== */}
       <section className="relative min-h-screen flex flex-col justify-center px-4 overflow-hidden">
-        {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1920&q=80')" }}
         />
-        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#080f1a]/70 via-[#080f1a]/60 to-[#080f1a]" />
-        {/* Glow effects */}
         <div className="absolute top-[-120px] right-[-80px] w-[500px] h-[500px] rounded-full bg-[#4ade80] opacity-[0.05] pointer-events-none blur-3xl" />
         <div className="absolute bottom-[100px] left-[-60px] w-[400px] h-[400px] rounded-full bg-[#4ade80] opacity-[0.03] pointer-events-none blur-3xl" />
 
         <div className="max-w-6xl mx-auto text-center relative z-10 pt-20 pb-16">
-          {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-[#4ade80]/10 border border-[#4ade80]/25 rounded-full px-4 py-1.5 text-xs font-semibold mb-6 text-[#4ade80] backdrop-blur-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80] inline-block animate-pulse" />
             Platform sewa kendaraan terpercaya #1 di Indonesia
           </div>
 
-          {/* Headline */}
           <h1 className="text-5xl md:text-7xl font-extrabold mb-5 leading-tight tracking-tight text-white drop-shadow-2xl">
             Gaskeun Kemana Aja, <br />
             <span className="text-[#4ade80]">Sekarang.</span>
@@ -156,8 +165,6 @@ export default function HomePage() {
           {/* Search Box */}
           <div className="max-w-5xl mx-auto">
             <div className="bg-black/40 border border-white/10 rounded-2xl flex flex-col md:flex-row overflow-visible backdrop-blur-md shadow-2xl">
-
-              {/* Nama Kendaraan */}
               <div className="flex items-center gap-3 flex-1 px-5 py-4 border-b md:border-b-0 md:border-r border-white/10">
                 <Car size={20} className="text-[#4ade80] flex-shrink-0" />
                 <div className="flex-1 min-w-0 text-left">
@@ -166,13 +173,12 @@ export default function HomePage() {
                     type="text"
                     placeholder="Cari mobil, motor..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => { setSearch(e.target.value); setCategory('') }}
                     className="w-full text-sm text-white placeholder:text-white/25 focus:outline-none bg-transparent"
                   />
                 </div>
               </div>
 
-              {/* Lokasi */}
               <div className="flex items-center gap-3 flex-1 px-5 py-4 border-b md:border-b-0 md:border-r border-white/10 overflow-visible">
                 <MapPin size={20} className="text-[#4ade80] flex-shrink-0" />
                 <div className="flex-1 min-w-0 text-left">
@@ -185,7 +191,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Tanggal Mulai */}
               <div className="flex items-center gap-3 flex-1 px-5 py-4 border-b md:border-b-0 md:border-r border-white/10">
                 <Calendar size={20} className="text-[#4ade80] flex-shrink-0" />
                 <div className="flex-1 text-left">
@@ -200,7 +205,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Tanggal Selesai */}
               <div className="flex items-center gap-3 flex-1 px-5 py-4 border-b md:border-b-0 border-white/10">
                 <Calendar size={20} className="text-[#4ade80] flex-shrink-0" />
                 <div className="flex-1 text-left">
@@ -215,7 +219,6 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Tombol Cari */}
               <button
                 onClick={() => {
                   const params = new URLSearchParams()
@@ -240,7 +243,6 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Stats — di dalam hero */}
           <div className="max-w-3xl mx-auto mt-12">
             <StatsSection />
           </div>
@@ -278,20 +280,35 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl mx-auto">
             {[
-              { icon: <Car size={28} />, label: 'Mobil', val: 'CAR', desc: 'Cocok untuk perjalanan keluarga, bisnis, atau perjalanan jauh dengan kenyamanan penuh.', tags: ['MPV', 'SUV', 'Sedan'], iconBg: 'bg-[#93c5fd]/10 border border-[#93c5fd]/20', iconColor: 'text-[#93c5fd]', tagStyle: 'bg-[#93c5fd]/10 text-[#93c5fd] border border-[#93c5fd]/20', hoverBorder: 'hover:border-[#93c5fd]/30' },
-              { icon: <Bike size={28} />, label: 'Motor', val: 'MOTORCYCLE', desc: 'Lincah di jalanan kota, hemat BBM, dan mudah menembus kemacetan kapanpun kamu butuh.', tags: ['Matic', 'Manual', 'Sport'], iconBg: 'bg-[#4ade80]/10 border border-[#4ade80]/20', iconColor: 'text-[#4ade80]', tagStyle: 'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/20', hoverBorder: 'hover:border-[#4ade80]/30' },
+              { icon: <Car size={28} />, label: 'Mobil', val: 'CAR' as VehicleType, desc: 'Cocok untuk perjalanan keluarga, bisnis, atau perjalanan jauh dengan kenyamanan penuh.', tags: ['MPV', 'SUV', 'Sedan'], iconBg: 'bg-[#93c5fd]/10 border border-[#93c5fd]/20', iconColor: 'text-[#93c5fd]', tagStyle: 'bg-[#93c5fd]/10 text-[#93c5fd] border border-[#93c5fd]/20', hoverBorder: 'hover:border-[#93c5fd]/30' },
+              { icon: <Bike size={28} />, label: 'Motor', val: 'MOTORCYCLE' as VehicleType, desc: 'Lincah di jalanan kota, hemat BBM, dan mudah menembus kemacetan kapanpun kamu butuh.', tags: ['Matic', 'Manual', 'Sport'], iconBg: 'bg-[#4ade80]/10 border border-[#4ade80]/20', iconColor: 'text-[#4ade80]', tagStyle: 'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/20', hoverBorder: 'hover:border-[#4ade80]/30' },
             ].map((c) => (
-              <button key={c.val} onClick={() => { handleTypeChange(c.val as VehicleType); document.getElementById('kendaraan')?.scrollIntoView({ behavior: 'smooth' }) }} className={`relative overflow-hidden text-left bg-white/[0.04] border border-white/10 ${c.hoverBorder} hover:bg-white/[0.07] hover:-translate-y-1 transition-all group cursor-pointer flex flex-col gap-4 rounded-2xl p-6`}>
+              <div
+                key={c.val}
+                onClick={() => { handleTypeChange(c.val); document.getElementById('kendaraan')?.scrollIntoView({ behavior: 'smooth' }) }}
+                className={`relative overflow-hidden text-left bg-white/[0.04] border border-white/10 ${c.hoverBorder} hover:bg-white/[0.07] hover:-translate-y-1 transition-all group cursor-pointer flex flex-col gap-4 rounded-2xl p-6`}
+              >
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${c.iconBg} ${c.iconColor}`}>{c.icon}</div>
                 <div>
                   <p className="font-semibold text-white text-lg">{c.label}</p>
                   <p className="text-sm text-white/40 mt-1 leading-relaxed">{c.desc}</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  {c.tags.map((tag) => (<span key={tag} className={`text-xs px-3 py-1 rounded-full font-medium ${c.tagStyle}`}>{tag}</span>))}
+                  {c.tags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCategoryClick(tag, c.val)
+                      }}
+                      className={`text-xs px-3 py-1 rounded-full font-medium cursor-pointer hover:opacity-75 transition-opacity ${c.tagStyle}`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
                 </div>
                 <span className="absolute bottom-4 right-4 text-white/20 group-hover:text-white/50 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform text-lg">↗</span>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -323,9 +340,19 @@ export default function HomePage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h2 className="text-2xl font-bold text-white">Kendaraan Tersedia</h2>
-            <p className="text-white/40 text-sm mt-0.5">Semua kendaraan siap disewa hari ini</p>
+            <p className="text-white/40 text-sm mt-0.5">
+              {category ? `Menampilkan kategori: ${category}` : 'Semua kendaraan siap disewa hari ini'}
+            </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            {category && (
+              <button
+                onClick={() => { setCategory(''); setType(''); setPage(1) }}
+                className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#4ade80]/15 text-[#4ade80] border border-[#4ade80]/40 hover:bg-[#4ade80]/25 transition-all"
+              >
+                ✕ {category}
+              </button>
+            )}
             <span className="flex items-center gap-1.5 text-sm font-medium text-white/50"><SlidersHorizontal size={16} /> Filter:</span>
             {VEHICLE_TYPES.map((t) => (
               <button key={t.value} onClick={() => handleTypeChange(t.value)} className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${type === t.value ? 'bg-[#4ade80]/15 text-[#4ade80] border-[#4ade80]/40' : 'bg-white/5 text-white/50 border-white/10 hover:border-white/25 hover:text-white/80'}`}>

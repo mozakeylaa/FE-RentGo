@@ -25,7 +25,7 @@ function SearchContent() {
   const initStartDate = searchParams.get('startDate') ?? ''
   const initEndDate   = searchParams.get('endDate')   ?? ''
   const initType      = (searchParams.get('type')     ?? '') as VehicleType | ''
-  const initCategory  = searchParams.get('category')  ?? ''   // ← baru
+  const initCategory  = searchParams.get('category')  ?? ''
 
   const [vehicles, setVehicles]     = useState<Vehicle[]>([])
   const [loading, setLoading]       = useState(true)
@@ -37,9 +37,9 @@ function SearchContent() {
     setLoading(true)
     try {
       const params = {
-        ...(initSearch    ? { search: initSearch }       : {}),
-        ...(initCategory  ? { category: initCategory }   : {}),
-        ...(type          ? { type }                     : {}),
+        ...(initSearch   ? { search: initSearch }     : {}),
+        ...(initCategory ? { category: initCategory } : {}),
+        ...(type         ? { type }                   : {}),
         page,
         limit: 8,
       }
@@ -61,29 +61,34 @@ function SearchContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#080f1a]">
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-[#0369a1] to-[#0ea5e9] text-white py-10 px-4 relative overflow-hidden">
-        <div className="absolute top-[-80px] right-[-60px] w-[280px] h-[280px] rounded-full bg-white/10 pointer-events-none" />
+      <div className="bg-[#080f1a] border-b border-white/[0.06] text-white py-10 px-4 relative overflow-hidden">
+        <div className="absolute top-[-80px] right-[-60px] w-[280px] h-[280px] rounded-full bg-[#4ade80] opacity-[0.04] pointer-events-none" />
+
         <div className="max-w-5xl mx-auto relative z-10">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-sm mb-5 transition-colors">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-white/40 hover:text-[#4ade80] text-sm mb-5 transition-colors"
+          >
             <ArrowLeft size={16} /> Kembali ke Home
           </Link>
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-3">Hasil Pencarian</h1>
+
           <div className="flex flex-wrap gap-2 text-sm">
             {initSearch && (
-              <span className="bg-white/20 border border-white/30 text-white rounded-full px-3 py-1 font-medium">
+              <span className="bg-[#4ade80]/10 border border-[#4ade80]/25 text-[#4ade80] rounded-full px-3 py-1 font-medium">
                 "{initSearch}"
               </span>
             )}
             {initCategory && (
-              <span className="bg-white/20 border border-white/30 text-white rounded-full px-3 py-1 font-medium">
+              <span className="bg-[#4ade80]/10 border border-[#4ade80]/25 text-[#4ade80] rounded-full px-3 py-1 font-medium">
                 {initCategory}
               </span>
             )}
             {initStartDate && initEndDate && (
-              <span className="bg-white/10 border border-white/20 text-white/80 rounded-full px-3 py-1">
+              <span className="bg-white/5 border border-white/10 text-white/50 rounded-full px-3 py-1">
                 {new Date(initStartDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}
                 {' — '}
                 {new Date(initEndDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -98,7 +103,7 @@ function SearchContent() {
 
         {/* Filter */}
         <div className="flex items-center gap-3 mb-6 flex-wrap">
-          <span className="flex items-center gap-1.5 text-sm font-medium text-slate-400">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-white/50">
             <SlidersHorizontal size={16} /> Filter:
           </span>
           {VEHICLE_TYPES.map((t) => (
@@ -107,8 +112,8 @@ function SearchContent() {
               onClick={() => handleTypeChange(t.value)}
               className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${
                 type === t.value
-                  ? 'bg-[#0ea5e9] text-white border-[#0ea5e9]'
-                  : 'bg-white text-slate-500 border-slate-200 hover:border-[#0ea5e9]/50 hover:text-[#0ea5e9]'
+                  ? 'bg-[#4ade80]/15 text-[#4ade80] border-[#4ade80]/40'
+                  : 'bg-white/5 text-white/50 border-white/10 hover:border-white/25 hover:text-white/80'
               }`}
             >
               {t.label}
@@ -129,35 +134,43 @@ function SearchContent() {
             />
             <Link
               href="/"
-              className="mt-6 inline-flex items-center gap-2 bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm"
+              className="mt-6 inline-flex items-center gap-2 bg-[#4ade80] hover:bg-[#22c55e] text-[#080f1a] font-bold px-5 py-2.5 rounded-xl transition-colors text-sm"
             >
               <ArrowLeft size={16} /> Kembali ke Home
             </Link>
           </div>
         ) : (
           <>
-            <p className="text-sm text-slate-400 mb-4">
-              Menampilkan <span className="font-semibold text-slate-600">{vehicles.length}</span> kendaraan
+            <p className="text-sm text-white/30 mb-4">
+              Menampilkan <span className="font-semibold text-white/60">{vehicles.length}</span> kendaraan
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {vehicles.map((v) => (
-                <VehicleCard key={v.id} vehicle={v} startDate={initStartDate} endDate={initEndDate} />
+                <VehicleCard
+                  key={v.id}
+                  vehicle={v}
+                  startDate={initStartDate}
+                  endDate={initEndDate}
+                />
               ))}
             </div>
+
             {totalPages > 1 && (
               <div className="flex items-center justify-center gap-3 mt-10">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="bg-white border border-slate-200 hover:border-[#0ea5e9] hover:text-[#0ea5e9] text-slate-500 py-2 px-3 rounded-xl disabled:opacity-40 transition-all"
+                  className="bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 py-2 px-3 rounded-xl disabled:opacity-40 transition-all"
                 >
                   <ChevronLeft size={16} />
                 </button>
-                <span className="text-sm text-slate-500 font-medium">Halaman {page} dari {totalPages}</span>
+                <span className="text-sm text-white/50 font-medium">
+                  Halaman {page} dari {totalPages}
+                </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page === totalPages}
-                  className="bg-white border border-slate-200 hover:border-[#0ea5e9] hover:text-[#0ea5e9] text-slate-500 py-2 px-3 rounded-xl disabled:opacity-40 transition-all"
+                  className="bg-white/5 border border-white/10 hover:bg-white/10 text-white/60 py-2 px-3 rounded-xl disabled:opacity-40 transition-all"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -173,8 +186,8 @@ function SearchContent() {
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <p className="text-slate-400 text-sm">Memuat pencarian...</p>
+      <div className="min-h-screen bg-[#080f1a] flex items-center justify-center">
+        <p className="text-white/40 text-sm">Memuat pencarian...</p>
       </div>
     }>
       <SearchContent />
