@@ -44,6 +44,7 @@ export interface VehicleParams {
   page?: number
   limit?: number
   location?: string
+  category?: string   // ← baru
 }
 
 export interface VehicleListResponse {
@@ -54,6 +55,7 @@ export interface VehicleListResponse {
 export interface CreateVehicleDto {
   name: string
   type: VehicleType
+  category?: string   // ← baru
   brand: string
   model: string
   year: number
@@ -238,11 +240,9 @@ export const paymentApi = {
   getByRental: (rentalId: string): Promise<Payment> =>
     axiosInstance.get(`/payments/rental/${rentalId}`).then(unwrap<Payment>),
 
-  // Konfirmasi manual (lama) — tetap ada
   confirm: (id: string): Promise<Payment> =>
     axiosInstance.post(`/payments/${id}/pay`).then(unwrap<Payment>),
 
-  // ── Baru ──
   getPaymentInfo: (method: string): Promise<PaymentInfo> =>
     axiosInstance.get(`/payments/info/${method}`).then(unwrap<PaymentInfo>),
 

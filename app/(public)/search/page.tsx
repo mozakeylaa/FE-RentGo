@@ -25,6 +25,7 @@ function SearchContent() {
   const initStartDate = searchParams.get('startDate') ?? ''
   const initEndDate   = searchParams.get('endDate')   ?? ''
   const initType      = (searchParams.get('type')     ?? '') as VehicleType | ''
+  const initCategory  = searchParams.get('category')  ?? ''
 
   const [vehicles, setVehicles]     = useState<Vehicle[]>([])
   const [loading, setLoading]       = useState(true)
@@ -36,8 +37,9 @@ function SearchContent() {
     setLoading(true)
     try {
       const params = {
-        ...(initSearch ? { search: initSearch } : {}),
-        ...(type       ? { type }               : {}),
+        ...(initSearch   ? { search: initSearch }     : {}),
+        ...(initCategory ? { category: initCategory } : {}),
+        ...(type         ? { type }                   : {}),
         page,
         limit: 8,
       }
@@ -49,7 +51,7 @@ function SearchContent() {
     } finally {
       setLoading(false)
     }
-  }, [initSearch, type, page])
+  }, [initSearch, initCategory, type, page])
 
   useEffect(() => { fetchVehicles() }, [fetchVehicles])
 
@@ -78,6 +80,11 @@ function SearchContent() {
             {initSearch && (
               <span className="bg-[#4ade80]/10 border border-[#4ade80]/25 text-[#4ade80] rounded-full px-3 py-1 font-medium">
                 "{initSearch}"
+              </span>
+            )}
+            {initCategory && (
+              <span className="bg-[#4ade80]/10 border border-[#4ade80]/25 text-[#4ade80] rounded-full px-3 py-1 font-medium">
+                {initCategory}
               </span>
             )}
             {initStartDate && initEndDate && (
