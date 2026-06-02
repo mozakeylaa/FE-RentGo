@@ -6,7 +6,7 @@ import {
   TrendingUp, Mail, Phone, Save,
   X, Pencil, LayoutDashboard, AlertCircle, BarChart2, Camera,
 } from 'lucide-react'
-import { vehicleApi, rentalApi, dashboardApi } from '@/lib/api'
+import { rentalApi, dashboardApi } from '@/lib/api'
 import axiosInstance, { getErrorMessage } from '@/lib/axios'
 import { useAuth } from '@/context/AuthContext'
 import type { Rental } from '@/types'
@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
         setRecentRentals(r.slice(0, 5))
         setAllRentals(r)
       } catch (err) {
-        console.error(err)
+        console.error('fetchStats error:', err)
       } finally {
         setLoading(false)
       }

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { vehicleApi } from '@/lib/api'
+import { vehicleApi, reviewApi } from '@/lib/api'
 import { getErrorMessage } from '@/lib/axios'
 import type { Vehicle, VehicleType } from '@/types'
 import VehicleCard from '@/components/VehicleCard'
@@ -38,36 +38,52 @@ function useCountUp(target: number, duration = 1500) {
   return count
 }
 
-function StatCard({ value, label, suffix = '' }: { value: number; label: string; suffix?: string }) {
-  const count = useCountUp(value)
+function StatCard({ value, label, suffix = '', decimals = 0 }: { value: number; label: string; suffix?: string; decimals?: number }) {
+  const count = useCountUp(Math.round(value))
+  const display = decimals > 0 ? value.toFixed(decimals) : count.toLocaleString('id-ID')
   return (
     <div className="bg-black/30 border border-white/10 rounded-2xl p-4 text-center backdrop-blur-md">
-      <p className="text-2xl font-extrabold text-[#4ade80]">{count.toLocaleString('id-ID')}{suffix}</p>
+      <p className="text-2xl font-extrabold text-[#4ade80]">{display}{suffix}</p>
       <p className="text-xs text-white/50 mt-0.5">{label}</p>
     </div>
   )
 }
 
 function StatsSection() {
-  const [stats, setStats] = useState({ totalVehicles: 0, availableVehicles: 0 })
+  const [stats, setStats] = useState({
+    availableVehicles: 0,
+    totalVehicles: 0,
+    avgRating: 0,
+  })
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [all, available] = await Promise.all([
-          vehicleApi.getAll({ limit: 1 }),
+        const [available, reviews] = await Promise.all([
           vehicleApi.getAll({ status: 'AVAILABLE', limit: 1 }),
+          reviewApi.getAll(),
         ])
-        setStats({ totalVehicles: all.meta?.total ?? 0, availableVehicles: available.meta?.total ?? 0 })
+
+        const avg = reviews.length > 0
+          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+          : 0
+
+        setStats({
+          availableVehicles: available.meta?.total ?? 0,
+          totalVehicles: available.meta?.total ?? 0,
+          avgRating: Math.round(avg * 10) / 10, // 1 desimal, misal 4.7
+        })
       } catch { }
     }
     fetchStats()
   }, [])
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <StatCard value={stats.availableVehicles} label="Kendaraan Tersedia" />
       <StatCard value={10000}                   label="Pelanggan Puas"     suffix="+" />
       <StatCard value={50}                      label="Kota Terjangkau"    suffix="+" />
-      <StatCard value={49}                      label="Rating Pelanggan"   suffix="★" />
+      <StatCard value={stats.avgRating}         label="Rating Pelanggan"   suffix="★" decimals={1} />
     </div>
   )
 }
@@ -223,7 +239,7 @@ export default function HomePage() {
                 onClick={() => {
                   const params = new URLSearchParams()
                   if (search)    params.set('search',    search)
-                  if (lokasi)    params.set('lokasi',    lokasi)
+                  if (lokasi)    params.set('lokasi',    lokasi)   // ← key tetap 'lokasi'
                   if (startDate) params.set('startDate', startDate)
                   if (endDate)   params.set('endDate',   endDate)
                   window.location.href = `/search?${params.toString()}`

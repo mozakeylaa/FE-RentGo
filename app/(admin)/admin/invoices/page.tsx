@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { RefreshCw, Loader2, FileText } from 'lucide-react'
+import { RefreshCw, Loader2, FileText, Search, X } from 'lucide-react'
 import { invoiceApi } from '@/lib/api'
 import { getErrorMessage } from '@/lib/axios'
 import { formatRupiah, formatDate } from '@/lib/format'
@@ -11,9 +11,10 @@ import Loader from '@/components/Loader'
 import EmptyState from '@/components/EmptyState'
 
 export default function AdminInvoicesPage() {
-  const [invoices, setInvoices]     = useState<Invoice[]>([])
-  const [loading, setLoading]       = useState(true)
+  const [invoices, setInvoices]         = useState<Invoice[]>([])
+  const [loading, setLoading]           = useState(true)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
+  const [search, setSearch]             = useState('')
 
   const fetchInvoices = async () => {
     setLoading(true)
@@ -42,6 +43,16 @@ export default function AdminInvoicesPage() {
     }
   }
 
+  const filtered = invoices.filter((inv) => {
+    const q = search.toLowerCase()
+    return (
+      inv.invoiceNumber?.toLowerCase().includes(q) ||
+      inv.rental?.user?.name?.toLowerCase().includes(q) ||
+      inv.rental?.user?.email?.toLowerCase().includes(q) ||
+      inv.rental?.vehicle?.name?.toLowerCase().includes(q)
+    )
+  })
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
@@ -56,10 +67,41 @@ export default function AdminInvoicesPage() {
         </button>
       </div>
 
+      {/* Search Bar */}
+      {!loading && invoices.length > 0 && (
+        <div className="relative mb-5">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari no. invoice, nama penyewa, atau kendaraan..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 bg-white text-slate-800 placeholder:text-slate-400 transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={15} />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Result info */}
+      {search && (
+        <p className="text-sm text-slate-500 mb-4">
+          Menampilkan <span className="font-semibold text-slate-700">{filtered.length}</span> hasil untuk "<span className="text-primary-600">{search}</span>"
+        </p>
+      )}
+
       {loading ? (
         <Loader />
       ) : invoices.length === 0 ? (
         <EmptyState title="Tidak ada invoice" description="Belum ada invoice yang digenerate." />
+      ) : filtered.length === 0 ? (
+        <EmptyState title="Invoice tidak ditemukan" description={`Tidak ada invoice dengan kata kunci "${search}".`} />
       ) : (
         <>
           {/* Tabel Desktop */}
@@ -75,7 +117,7 @@ export default function AdminInvoicesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {invoices.map((inv) => (
+                {filtered.map((inv) => (
                   <tr key={inv.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-5 py-4">
                       <span className="font-mono text-sm font-semibold text-slate-700">
@@ -116,7 +158,7 @@ export default function AdminInvoicesPage() {
 
           {/* Kartu Mobile */}
           <div className="lg:hidden space-y-3">
-            {invoices.map((inv) => (
+            {filtered.map((inv) => (
               <div key={inv.id} className="card space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>

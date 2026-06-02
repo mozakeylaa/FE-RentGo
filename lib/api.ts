@@ -44,7 +44,7 @@ export interface VehicleParams {
   page?: number
   limit?: number
   location?: string
-  category?: string   // ← baru
+  category?: string
 }
 
 export interface VehicleListResponse {
@@ -55,7 +55,7 @@ export interface VehicleListResponse {
 export interface CreateVehicleDto {
   name: string
   type: VehicleType
-  category?: string   // ← baru
+  category?: string
   brand: string
   model: string
   year: number
@@ -73,6 +73,7 @@ export interface CreateRentalDto {
   vehicleId: string
   startDate: string
   endDate: string
+  note?: string
 }
 
 export interface RentalParams {
@@ -327,5 +328,16 @@ export const userApi = {
 
 export const dashboardApi = {
   getStats: (): Promise<DashboardStats> =>
-    axiosInstance.get('/dashboard/stats').then(unwrap<DashboardStats>),
+    axiosInstance.get('/dashboard/stats').then((res) => {
+      // Response shape: { data: { totals, vehicles, rentals, recentRentals } }
+      const d = res.data?.data
+      return {
+        totalUsers:        d?.totals?.users        ?? 0,
+        totalVehicles:     d?.totals?.vehicles      ?? 0,
+        availableVehicles: d?.vehicles?.available   ?? 0,
+        totalRentals:      d?.totals?.rentals        ?? 0,
+        pendingRentals:    d?.rentals?.pending       ?? 0,
+        totalRevenue:      d?.totals?.revenue        ?? 0,
+      } as DashboardStats
+    }),
 }

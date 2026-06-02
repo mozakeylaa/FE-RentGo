@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
   ArrowLeft, Loader2, CreditCard, Banknote, QrCode,
   CheckCircle, AlertCircle, Calendar, Car, Clock,
-  FileText, Upload, Image as ImageIcon, RefreshCw
+  FileText, Upload, RefreshCw, Timer
 } from 'lucide-react'
 import { rentalApi, paymentApi } from '@/lib/api'
 import { getErrorMessage } from '@/lib/axios'
@@ -16,42 +16,85 @@ import type { Rental, Payment, PaymentMethod, PaymentInfo } from '@/types'
 
 const METHOD_OPTIONS: { value: PaymentMethod; label: string; icon: React.ReactNode; desc: string }[] = [
   { value: 'TRANSFER', label: 'Transfer Bank', icon: <Banknote size={20} />, desc: 'BCA, Mandiri, BNI, BRI' },
-  { value: 'QRIS', label: 'QRIS', icon: <QrCode size={20} />, desc: 'Scan QR dari app apapun' },
+  { value: 'QRIS',     label: 'QRIS',          icon: <QrCode size={20} />,   desc: 'Scan QR dari app apapun' },
 ]
 
 const statusStyle: Record<string, string> = {
   PENDING: 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/25',
-  PAID: 'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/25',
-  FAILED: 'bg-red-400/10 text-red-400 border border-red-400/25',
+  PAID:    'bg-[#4ade80]/10 text-[#4ade80] border border-[#4ade80]/25',
+  FAILED:  'bg-red-400/10 text-red-400 border border-red-400/25',
 }
 const statusLabel: Record<string, string> = {
   PENDING: 'Menunggu Pembayaran',
-  PAID: 'Lunas',
-  FAILED: 'Gagal',
+  PAID:    'Lunas',
+  FAILED:  'Gagal',
 }
 const proofStatusLabel: Record<string, string> = {
   PENDING_REVIEW: 'Bukti sedang direview admin',
-  REJECTED: 'Bukti ditolak, upload ulang',
+  REJECTED:       'Bukti ditolak, upload ulang',
 }
 const proofStatusStyle: Record<string, string> = {
   PENDING_REVIEW: 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/25',
-  REJECTED: 'bg-red-400/10 text-red-400 border border-red-400/25',
+  REJECTED:       'bg-red-400/10 text-red-400 border border-red-400/25',
+}
+
+// ── Countdown Timer Hook ──────────────────────────────────────────────────────
+function useCountdown(createdAt: string | undefined, limitMinutes = 5) {
+  const [secondsLeft, setSecondsLeft] = useState<number>(0)
+  const [expired, setExpired]         = useState(false)
+
+  useEffect(() => {
+    if (!createdAt) return
+
+    const expireAt = new Date(createdAt).getTime() + limitMinutes * 60 * 1000
+
+    const tick = () => {
+      const diff = Math.floor((expireAt - Date.now()) / 1000)
+      if (diff <= 0) {
+        setSecondsLeft(0)
+        setExpired(true)
+      } else {
+        setSecondsLeft(diff)
+        setExpired(false)
+      }
+    }
+
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [createdAt, limitMinutes])
+
+  const minutes = Math.floor(secondsLeft / 60)
+  const seconds = secondsLeft % 60
+  const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  const percent = createdAt
+    ? Math.max(0, secondsLeft / (limitMinutes * 60)) * 100
+    : 100
+
+  return { display, expired, secondsLeft, percent }
 }
 
 export default function PaymentPage() {
   const { rentalId } = useParams<{ rentalId: string }>()
 
-  const [rental, setRental] = useState<Rental | null>(null)
-  const [payment, setPayment] = useState<Payment | null>(null)
+  const [rental, setRental]           = useState<Rental | null>(null)
+  const [payment, setPayment]         = useState<Payment | null>(null)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
-  const [method, setMethod] = useState<PaymentMethod>('TRANSFER')
-  const [loadingRental, setLoadingRental] = useState(true)
+  const [method, setMethod]           = useState<PaymentMethod>('TRANSFER')
+  const [loadingRental, setLoadingRental]   = useState(true)
   const [loadingPayment, setLoadingPayment] = useState(true)
-  const [loadingInfo, setLoadingInfo] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [proofPreview, setProofPreview] = useState<string | null>(null)
+  const [loadingInfo, setLoadingInfo]       = useState(false)
+  const [creating, setCreating]             = useState(false)
+  const [uploading, setUploading]           = useState(false)
+  const [proofPreview, setProofPreview]     = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Countdown aktif jika status PENDING dan BELUM upload bukti pembayaran (bukan PENDING_REVIEW)
+  const { display, expired, percent } = useCountdown(
+    payment?.status === 'PENDING' && payment?.proofStatus !== 'PENDING_REVIEW' 
+      ? payment?.createdAt 
+      : undefined
+  )
 
   useEffect(() => {
     if (!rentalId) return
@@ -66,7 +109,6 @@ export default function PaymentPage() {
     paymentApi.getByRental(rentalId)
       .then((p) => {
         setPayment(p)
-        // Fetch payment info sesuai method yang sudah dibuat
         fetchPaymentInfo(p.method)
       })
       .catch(() => { })
@@ -78,11 +120,8 @@ export default function PaymentPage() {
     try {
       const info = await paymentApi.getPaymentInfo(m)
       setPaymentInfo(info)
-    } catch {
-      // silent
-    } finally {
-      setLoadingInfo(false)
-    }
+    } catch { }
+    finally { setLoadingInfo(false) }
   }
 
   const handleCreatePayment = async () => {
@@ -90,7 +129,6 @@ export default function PaymentPage() {
     try {
       const newPayment = await paymentApi.create({ rentalId, method })
       setPayment(newPayment)
-      // Ambil payment info setelah buat payment
       await fetchPaymentInfo(method)
       toast.success('Pembayaran berhasil dibuat!')
     } catch (err) {
@@ -114,8 +152,6 @@ export default function PaymentPage() {
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Ukuran maksimal 5MB'); return
     }
-
-    // Preview lokal
     const reader = new FileReader()
     reader.onload = () => setProofPreview(reader.result as string)
     reader.readAsDataURL(file)
@@ -172,6 +208,51 @@ export default function PaymentPage() {
         </Link>
 
         <h1 className="text-2xl font-bold text-white mb-6">Pembayaran</h1>
+
+        {/* ── Countdown Timer (Akan tersembunyi jika status bukti 'PENDING_REVIEW') ── */}
+        {payment && payment.status === 'PENDING' && payment.proofStatus !== 'PENDING_REVIEW' && (
+          <div className={`rounded-2xl p-5 mb-5 border ${
+            expired
+              ? 'bg-red-500/10 border-red-500/25'
+              : percent < 30
+              ? 'bg-orange-500/10 border-orange-400/25'
+              : 'bg-yellow-400/5 border-yellow-400/20'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Timer size={18} className={expired ? 'text-red-400' : percent < 30 ? 'text-orange-400' : 'text-yellow-400'} />
+                <p className={`text-sm font-semibold ${expired ? 'text-red-400' : percent < 30 ? 'text-orange-400' : 'text-yellow-400'}`}>
+                  {expired ? 'Waktu Habis!' : 'Selesaikan pembayaran dalam'}
+                </p>
+              </div>
+              <span className={`font-mono text-2xl font-extrabold tracking-widest ${
+                expired ? 'text-red-400' : percent < 30 ? 'text-orange-400' : 'text-yellow-300'
+              }`}>
+                {expired ? '00:00' : display}
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${
+                  expired ? 'bg-red-500' : percent < 30 ? 'bg-orange-400' : 'bg-yellow-400'
+                }`}
+                style={{ width: `${expired ? 0 : percent}%` }}
+              />
+            </div>
+
+            {expired ? (
+              <p className="text-xs text-red-400/70 mt-2">
+                Pesanan ini akan segera dibatalkan secara otomatis. Silakan buat pesanan baru.
+              </p>
+            ) : (
+              <p className="text-xs text-white/30 mt-2">
+                Pembayaran akan otomatis dibatalkan jika tidak diselesaikan tepat waktu.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Info Rental */}
         <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 mb-5">
@@ -235,7 +316,6 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Status bukti */}
               {payment.proofStatus && payment.status !== 'PAID' && (
                 <div className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium ${proofStatusStyle[payment.proofStatus]}`}>
                   {payment.proofStatus === 'PENDING_REVIEW'
@@ -248,7 +328,7 @@ export default function PaymentPage() {
             </div>
 
             {/* Info Cara Bayar */}
-            {payment.status !== 'PAID' && (
+            {payment.status !== 'PAID' && !expired && (
               <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wide">Cara Pembayaran</h2>
 
@@ -260,22 +340,18 @@ export default function PaymentPage() {
                   <>
                     <p className="text-sm text-white/60">{paymentInfo.instructions}</p>
 
-                    {/* TRANSFER — tampil rekening */}
                     {paymentInfo.method === 'TRANSFER' && paymentInfo.accounts && (
                       <div className="space-y-2">
-                        {paymentInfo.accounts.map((acc, i) => {
-                          return (
-                            <div key={i} className="bg-white/[0.04] border border-white/10 rounded-xl p-4">
-                              <p className="text-xs text-white/40 mb-1">{acc.bank}</p>
-                              <p className="font-mono text-lg font-bold text-white">{acc.accountNumber}</p>
-                              <p className="text-xs text-white/50 mt-0.5">a.n. {acc.accountName}</p>
-                            </div>
-                          )
-                        })}
+                        {paymentInfo.accounts.map((acc, i) => (
+                          <div key={i} className="bg-white/[0.04] border border-white/10 rounded-xl p-4">
+                            <p className="text-xs text-white/40 mb-1">{acc.bank}</p>
+                            <p className="font-mono text-lg font-bold text-white">{acc.accountNumber}</p>
+                            <p className="text-xs text-white/50 mt-0.5">a.n. {acc.accountName}</p>
+                          </div>
+                        ))}
                       </div>
                     )}
 
-                    {/* QRIS — tampil QR */}
                     {paymentInfo.method === 'QRIS' && paymentInfo.qrisImageUrl && (
                       <div className="flex flex-col items-center gap-3">
                         <div className="bg-white p-4 rounded-2xl">
@@ -296,8 +372,8 @@ export default function PaymentPage() {
               </div>
             )}
 
-            {/* Upload/Detail Bukti — hanya jika belum PAID */}
-            {payment.status !== 'PAID' && (
+            {/* Upload Bukti */}
+            {payment.status !== 'PAID' && !expired && (
               <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-white/50 uppercase tracking-wide">
                   {payment.proofStatus === 'PENDING_REVIEW' ? 'Bukti Pembayaran' : 'Upload Bukti Pembayaran'}
@@ -306,7 +382,6 @@ export default function PaymentPage() {
                   <p className="text-xs text-white/40">Setelah transfer/scan, upload foto bukti pembayaran kamu.</p>
                 )}
 
-                {/* Preview bukti */}
                 {currentProof && (
                   <div className="relative rounded-xl overflow-hidden border border-white/10">
                     <img src={currentProof} alt="Bukti" className="w-full max-h-48 object-cover" />
@@ -314,8 +389,9 @@ export default function PaymentPage() {
                 )}
 
                 {payment.proofStatus !== 'PENDING_REVIEW' ? (
-                  <label className={`flex flex-col items-center justify-center gap-2 w-full border-2 border-dashed rounded-2xl py-6 cursor-pointer transition-all ${uploading ? 'border-white/10 opacity-50 pointer-events-none' : 'border-white/15 hover:border-[#4ade80]/50 hover:bg-[#4ade80]/5'
-                    }`}>
+                  <label className={`flex flex-col items-center justify-center gap-2 w-full border-2 border-dashed rounded-2xl py-6 cursor-pointer transition-all ${
+                    uploading ? 'border-white/10 opacity-50 pointer-events-none' : 'border-white/15 hover:border-[#4ade80]/50 hover:bg-[#4ade80]/5'
+                  }`}>
                     {uploading ? (
                       <><Loader2 size={22} className="animate-spin text-[#4ade80]" /><span className="text-sm text-white/40">Mengupload...</span></>
                     ) : (
@@ -328,7 +404,6 @@ export default function PaymentPage() {
                     <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleUploadProof} disabled={uploading} />
                   </label>
                 ) : (
-                  /* Sudah ada bukti tapi belum direview */
                   <div className="flex items-center gap-2 text-xs text-yellow-400/70">
                     <Clock size={13} /> Bukti sudah diupload, menunggu konfirmasi admin
                   </div>
@@ -352,6 +427,18 @@ export default function PaymentPage() {
                 </div>
               </div>
             )}
+
+            {/* Expired state */}
+            {expired && payment.status === 'PENDING' && (
+              <div className="bg-red-500/10 border border-red-500/25 rounded-2xl p-5 text-center space-y-3">
+                <AlertCircle size={40} className="text-red-400 mx-auto" />
+                <p className="font-semibold text-white">Waktu Pembayaran Habis</p>
+                <p className="text-sm text-white/40">Pesanan ini akan dibatalkan otomatis. Silakan buat pesanan baru.</p>
+                <Link href="/vehicles" className="inline-flex items-center gap-2 bg-[#4ade80] text-[#080f1a] font-bold px-5 py-2.5 rounded-xl text-sm hover:bg-[#22c55e] transition-colors">
+                  Cari Kendaraan Lain
+                </Link>
+              </div>
+            )}
           </div>
 
         ) : (
@@ -363,21 +450,24 @@ export default function PaymentPage() {
                 <button
                   key={opt.value}
                   onClick={() => setMethod(opt.value)}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${method === opt.value
+                  className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+                    method === opt.value
                       ? 'border-[#4ade80]/40 bg-[#4ade80]/5'
                       : 'border-white/10 bg-white/[0.02] hover:border-white/20'
-                    }`}
+                  }`}
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${method === opt.value ? 'bg-[#4ade80]/15 text-[#4ade80]' : 'bg-white/5 text-white/40'
-                    }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    method === opt.value ? 'bg-[#4ade80]/15 text-[#4ade80]' : 'bg-white/5 text-white/40'
+                  }`}>
                     {opt.icon}
                   </div>
                   <div className="flex-1">
                     <p className={`font-semibold text-sm ${method === opt.value ? 'text-white' : 'text-white/60'}`}>{opt.label}</p>
                     <p className="text-xs text-white/30">{opt.desc}</p>
                   </div>
-                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${method === opt.value ? 'border-[#4ade80] bg-[#4ade80]' : 'border-white/20'
-                    }`} />
+                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+                    method === opt.value ? 'border-[#4ade80] bg-[#4ade80]' : 'border-white/20'
+                  }`} />
                 </button>
               ))}
             </div>

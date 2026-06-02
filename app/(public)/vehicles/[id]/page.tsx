@@ -6,7 +6,7 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
   Loader2, Calendar, Tag, MapPin, Info,
-  Car, AlertCircle, ArrowLeft, ShoppingCart, FileText, ChevronLeft, ChevronRight, X
+  Car, AlertCircle, ArrowLeft, ShoppingCart, ChevronLeft, ChevronRight, X
 } from 'lucide-react'
 import { vehicleApi, rentalApi } from '@/lib/api'
 import { getErrorMessage } from '@/lib/axios'
@@ -38,7 +38,6 @@ export default function VehicleDetailPage() {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [catatan, setCatatan] = useState('')
 
   // ── Galeri ──
   const [images, setImages] = useState<VehicleImage[]>([])
@@ -49,15 +48,13 @@ export default function VehicleDetailPage() {
 
   const [startDate, setStartDate] = useState(searchParams.get('startDate') ?? '')
   const [endDate, setEndDate] = useState(searchParams.get('endDate') ?? '')
-  const [lokasi, setLokasi] = useState(searchParams.get('lokasi') ?? '')
+  const [note, setNote] = useState('')
 
   useEffect(() => {
     const sDate = searchParams.get('startDate')
     const eDate = searchParams.get('endDate')
-    const lok = searchParams.get('lokasi')
     if (sDate) setStartDate(sDate)
     if (eDate) setEndDate(eDate)
-    if (lok) setLokasi(lok)
   }, [searchParams])
 
   const diffDays = (() => {
@@ -81,7 +78,6 @@ export default function VehicleDetailPage() {
       .catch(() => toast.error('Kendaraan tidak ditemukan'))
       .finally(() => setLoading(false))
 
-    // Fetch galeri gambar
     vehicleApi.getImages(id)
       .then((imgs) => setImages(imgs))
       .catch(() => { })
@@ -94,7 +90,7 @@ export default function VehicleDetailPage() {
     }
     setSubmitting(true)
     try {
-      await rentalApi.create({ vehicleId: id, startDate, endDate })
+      await rentalApi.create({ vehicleId: id, startDate, endDate, note })
       toast.success('Sewa berhasil dibuat!')
       router.push('/my-rentals')
     } catch (err) {
@@ -104,7 +100,6 @@ export default function VehicleDetailPage() {
     }
   }
 
-  // Semua foto: foto utama + galeri
   const allImages = [
     ...(vehicle?.imageUrl ? [{ id: 'main', url: vehicle.imageUrl, publicId: '', order: -1 }] : []),
     ...images,
@@ -138,7 +133,7 @@ export default function VehicleDetailPage() {
   const isAvailable = vehicle.status === 'AVAILABLE'
   const canBook = isAvailable && !isAdmin
 
-  const inputClass = `w-full bg-white/5 border border-white/10 focus:border-[#4ade80]/40 focus:bg-white/[0.07] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none transition-all [color-scheme:dark] disabled:opacity-40 disabled:cursor-not-allowed`
+  const inputClass = `w-full bg-white/5 border border-white/10 focus:border-[#4ade80]/40 focus:bg-white/[0.07] rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none transition-all [color-scheme:dark] disabled:opacity-40 disabled:cursor-not-allowed`
 
   const currentIdx = allImages.findIndex((img) => img.url === activeImg)
 
@@ -173,7 +168,6 @@ export default function VehicleDetailPage() {
                 </span>
               </div>
 
-              {/* Navigasi panah kalau ada banyak foto */}
               {allImages.length > 1 && (
                 <>
                   <button
@@ -297,21 +291,17 @@ export default function VehicleDetailPage() {
                   <input type="date" min={startDate || today} value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={!canBook || !startDate} className={inputClass} />
                   {dateError && <p className="text-red-400 text-xs mt-1.5">{dateError}</p>}
                 </div>
+                {/* ── Keterangan / Note ── */}
                 <div>
-                  <label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">Lokasi Pengambilan</label>
-                  <div className="relative">
-                    <MapPin size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4ade80] pointer-events-none" />
-                    <input type="text" placeholder="Masukkan alamat atau kota..." value={lokasi} onChange={(e) => setLokasi(e.target.value)} disabled={!canBook} className={`${inputClass} pl-9`} />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">
-                    Keterangan <span className="text-white/25 normal-case font-normal">(opsional)</span>
-                  </label>
-                  <div className="relative">
-                    <FileText size={15} className="absolute left-3 top-3 text-[#4ade80] pointer-events-none" />
-                    <textarea placeholder="Contoh: antar ke hotel, butuh kursi bayi, dll..." rows={3} value={catatan} onChange={(e) => setCatatan(e.target.value)} disabled={!canBook} className="w-full bg-white/5 border border-white/10 focus:border-[#4ade80]/40 focus:bg-white/[0.07] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed resize-none" />
-                  </div>
+                  <label className="block text-xs font-semibold text-white/50 uppercase tracking-wide mb-1.5">Keterangan (Opsional)</label>
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    disabled={!canBook}
+                    rows={3}
+                    className={`${inputClass} resize-none`}
+                    placeholder="Contoh: Tolong siapkan 2 helm ya..."
+                  />
                 </div>
               </div>
 
@@ -334,7 +324,11 @@ export default function VehicleDetailPage() {
               )}
 
               {!isAdmin && (
-                <button onClick={handleSewa} disabled={!canBook || submitting || !!dateError || !startDate || !endDate} className="w-full flex items-center justify-center gap-2 bg-[#4ade80] hover:bg-[#22c55e] active:bg-[#16a34a] disabled:opacity-40 disabled:cursor-not-allowed text-[#080f1a] font-bold py-2.5 px-4 rounded-xl transition-colors text-sm">
+                <button
+                  onClick={handleSewa}
+                  disabled={!canBook || submitting || !!dateError || !startDate || !endDate}
+                  className="w-full flex items-center justify-center gap-2 bg-[#4ade80] hover:bg-[#22c55e] active:bg-[#16a34a] disabled:opacity-40 disabled:cursor-not-allowed text-[#080f1a] font-bold py-2.5 px-4 rounded-xl transition-colors text-sm"
+                >
                   {submitting
                     ? <><Loader2 size={16} className="animate-spin" /> Memproses...</>
                     : !isAuthenticated
