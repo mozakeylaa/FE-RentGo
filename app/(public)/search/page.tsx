@@ -22,6 +22,7 @@ function SearchContent() {
   const searchParams = useSearchParams()
 
   const initSearch    = searchParams.get('search')    ?? ''
+  const initLokasi    = searchParams.get('lokasi')    ?? ''   // ← fix: baca param lokasi
   const initStartDate = searchParams.get('startDate') ?? ''
   const initEndDate   = searchParams.get('endDate')   ?? ''
   const initType      = (searchParams.get('type')     ?? '') as VehicleType | ''
@@ -37,9 +38,10 @@ function SearchContent() {
     setLoading(true)
     try {
       const params = {
-        ...(initSearch   ? { search: initSearch }     : {}),
-        ...(initCategory ? { category: initCategory } : {}),
-        ...(type         ? { type }                   : {}),
+        ...(initSearch   ? { search: initSearch }       : {}),
+        ...(initCategory ? { category: initCategory }   : {}),
+        ...(initLokasi   ? { location: initLokasi }     : {}),  // ← fix: kirim location
+        ...(type         ? { type }                     : {}),
         page,
         limit: 8,
       }
@@ -51,7 +53,7 @@ function SearchContent() {
     } finally {
       setLoading(false)
     }
-  }, [initSearch, initCategory, type, page])
+  }, [initSearch, initCategory, initLokasi, type, page])
 
   useEffect(() => { fetchVehicles() }, [fetchVehicles])
 
@@ -80,6 +82,11 @@ function SearchContent() {
             {initSearch && (
               <span className="bg-[#4ade80]/10 border border-[#4ade80]/25 text-[#4ade80] rounded-full px-3 py-1 font-medium">
                 "{initSearch}"
+              </span>
+            )}
+            {initLokasi && (
+              <span className="bg-[#4ade80]/10 border border-[#4ade80]/25 text-[#4ade80] rounded-full px-3 py-1 font-medium">
+                📍 {initLokasi}
               </span>
             )}
             {initCategory && (
