@@ -92,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null)
     setUser(null)
     toast.success('Berhasil logout')
-    router.push('/login')
+    router.push('/')
   }
 
   const value: AuthContextType = {

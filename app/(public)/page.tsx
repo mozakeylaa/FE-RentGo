@@ -52,27 +52,26 @@ function StatCard({ value, label, suffix = '', decimals = 0 }: { value: number; 
 function StatsSection() {
   const [stats, setStats] = useState({
     availableVehicles: 0,
-    totalVehicles: 0,
     avgRating: 0,
   })
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [available, reviews] = await Promise.all([
-          vehicleApi.getAll({ status: 'AVAILABLE', limit: 1 }),
-          reviewApi.getAll(),
-        ])
+        const available = await vehicleApi.getAll({ status: 'AVAILABLE', limit: 1 })
+        const total = available.meta?.total ?? available.meta?.totalPages ?? 0
 
-        const avg = reviews.length > 0
-          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-          : 0
+        let avgRating = 0
+        try {
+          const reviews = await reviewApi.getAll()
+          if (Array.isArray(reviews) && reviews.length > 0) {
+            avgRating = Math.round(
+              (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length) * 10
+            ) / 10
+          }
+        } catch { }
 
-        setStats({
-          availableVehicles: available.meta?.total ?? 0,
-          totalVehicles: available.meta?.total ?? 0,
-          avgRating: Math.round(avg * 10) / 10, // 1 desimal, misal 4.7
-        })
+        setStats({ availableVehicles: total, avgRating })
       } catch { }
     }
     fetchStats()

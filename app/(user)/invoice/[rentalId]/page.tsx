@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -9,16 +9,16 @@ import {
   Calendar, Car, CheckCircle, Printer, Download
 } from 'lucide-react'
 import { invoiceApi } from '@/lib/api'
-import { getErrorMessage } from '@/lib/axios'
+import axiosInstance, { getErrorMessage } from '@/lib/axios'
 import { formatRupiah, formatDate } from '@/lib/format'
 import type { Invoice } from '@/types'
 
 export default function InvoicePage() {
   const { rentalId } = useParams<{ rentalId: string }>()
-  const [invoice, setInvoice]   = useState<Invoice | null>(null)
-  const [loading, setLoading]   = useState(true)
-  const [notFound, setNotFound] = useState(false)
-  const invoiceRef              = useRef<HTMLDivElement>(null)
+  const [invoice, setInvoice]       = useState<Invoice | null>(null)
+  const [loading, setLoading]       = useState(true)
+  const [notFound, setNotFound]     = useState(false)
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     if (!rentalId) return
@@ -35,93 +35,30 @@ export default function InvoicePage() {
       .finally(() => setLoading(false))
   }, [rentalId])
 
-  const handleDownload = () => {
-    if (!invoice) return
-    // Buat konten HTML invoice untuk didownload sebagai file HTML
-    const content = invoiceRef.current?.innerHTML
-    if (!content) return
+  const handleDownload = async () => {
+    if (!invoice || downloading) return
+    setDownloading(true)
 
-    const html = `
-      <!DOCTYPE html>
-      <html lang="id">
-      <head>
-        <meta charset="UTF-8" />
-        <title>Invoice ${invoice.invoiceNumber}</title>
-        <style>
-          body { font-family: sans-serif; background: #fff; color: #111; padding: 32px; max-width: 600px; margin: 0 auto; }
-          .header { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-          .brand { font-size: 20px; font-weight: 800; color: #111; }
-          .brand span { color: #16a34a; }
-          .lunas { color: #16a34a; font-weight: 700; font-size: 14px; }
-          .section { margin-bottom: 20px; }
-          .label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-          .value { font-weight: 600; font-size: 15px; }
-          .divider { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
-          .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
-          .total { font-weight: 800; font-size: 18px; color: #16a34a; }
-          .footer { text-align: center; color: #9ca3af; font-size: 12px; margin-top: 24px; }
-          .vehicle-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-top: 8px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div>
-            <div class="brand">Rent<span>Go</span></div>
-            <div style="font-size:12px;color:#6b7280">Platform Sewa Kendaraan</div>
-          </div>
-          <div class="lunas">✓ LUNAS</div>
-        </div>
+    try {
+      const res = await axiosInstance.get(
+        `/invoices/rental/${rentalId}/download`,
+        { responseType: 'blob' }
+      )
 
-        <div class="section" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div>
-            <div class="label">Nomor Invoice</div>
-            <div class="value" style="font-family:monospace">${invoice.invoiceNumber}</div>
-          </div>
-          <div>
-            <div class="label">Tanggal Terbit</div>
-            <div class="value">${formatDate(invoice.issuedAt)}</div>
-          </div>
-        </div>
+      const blob = new Blob([res.data], { type: 'application/pdf' })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `${invoice.invoiceNumber}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
 
-        <hr class="divider" />
-
-        <div class="section">
-          <div class="label">Detail Sewa</div>
-          <div class="vehicle-box">
-            <div style="font-weight:700;font-size:15px">${invoice.rental?.vehicle?.name ?? '—'}</div>
-            <div style="font-size:12px;color:#6b7280">${invoice.rental?.vehicle?.brand ?? ''} · ${invoice.rental?.vehicle?.plateNumber ?? ''}</div>
-            <div style="margin-top:8px;font-size:13px;color:#374151">
-              📅 ${formatDate(invoice.rental?.startDate ?? '')} – ${formatDate(invoice.rental?.endDate ?? '')}
-            </div>
-          </div>
-        </div>
-
-        <hr class="divider" />
-
-        <div class="section">
-          <div class="label">Rincian Pembayaran</div>
-          <div class="row"><span style="color:#6b7280">Total Sewa</span><span>${formatRupiah(invoice.rental?.totalPrice ?? 0)}</span></div>
-          <div class="row"><span style="color:#6b7280">Status</span><span style="color:#16a34a;font-weight:600">Lunas</span></div>
-          <hr class="divider" />
-          <div class="row"><span style="font-weight:700">Total Dibayar</span><span class="total">${formatRupiah(invoice.amount)}</span></div>
-        </div>
-
-        <div class="footer">
-          <p>Terima kasih telah menggunakan RentGo</p>
-          <p>© 2026 RentGo. All rights reserved.</p>
-        </div>
-      </body>
-      </html>
-    `
-
-    const blob = new Blob([html], { type: 'text/html' })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a')
-    a.href     = url
-    a.download = `Invoice-${invoice.invoiceNumber}.html`
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success('Invoice berhasil didownload!')
+      toast.success('Invoice berhasil didownload!')
+    } catch (err) {
+      toast.error(getErrorMessage(err))
+    } finally {
+      setDownloading(false)
+    }
   }
 
   if (loading) {
@@ -169,15 +106,19 @@ export default function InvoicePage() {
             </button>
             <button
               onClick={handleDownload}
-              className="flex items-center gap-2 bg-[#4ade80]/10 border border-[#4ade80]/25 hover:bg-[#4ade80]/20 text-[#4ade80] text-sm font-medium px-4 py-2 rounded-xl transition-all"
+              disabled={downloading}
+              className="flex items-center gap-2 bg-[#4ade80]/10 border border-[#4ade80]/25 hover:bg-[#4ade80]/20 text-[#4ade80] text-sm font-medium px-4 py-2 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download size={15} /> Download
+              {downloading
+                ? <><Loader2 size={15} className="animate-spin" /> Mengunduh...</>
+                : <><Download size={15} /> Download PDF</>
+              }
             </button>
           </div>
         </div>
 
         {/* Invoice Card */}
-        <div ref={invoiceRef} className="bg-white/[0.04] border border-white/10 rounded-2xl overflow-hidden print:bg-white print:text-black">
+        <div className="bg-white/[0.04] border border-white/10 rounded-2xl overflow-hidden print:bg-white print:text-black">
 
           {/* Header Invoice */}
           <div className="bg-[#4ade80]/10 border-b border-[#4ade80]/20 px-6 py-5">

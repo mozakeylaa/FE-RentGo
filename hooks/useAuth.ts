@@ -35,7 +35,7 @@ export function useAuth() {
   const logout = useCallback(() => {
     logoutFn()
     setUser(null)
-    router.push('/login')
+    router.push('/')
   }, [router])
 
   return {
